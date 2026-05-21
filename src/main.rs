@@ -1,19 +1,23 @@
 
-use std::net::udpSocket;
+use std::net::UdpSocket;
+
 #[tokio::main]
-
 async fn main() {
+    let socket = UdpSocket::bind("0.0.0.0:0")
+        .expect("Failed to bind UDP socket");
 
-    let socket = udpSocket::bind("0.0.0.0:0").unwrap()
+    println!("Socket bound to: {:?}", socket.local_addr());
+
+    build_packet().await;
+
+    parse("example.com").await;
 }
 
-
 async fn build_packet() {
-    /// This fn builds a dns packet
-
-
+    // Builds a DNS packet
+    println!("Building DNS packet...");
 }
 
 async fn parse(domain: &str) {
-
+    println!("Parsing domain: {}", domain);
 }
