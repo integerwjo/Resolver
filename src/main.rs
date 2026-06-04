@@ -1,30 +1,59 @@
+use std::io;
 use std::net::UdpSocket;
 
-#[tokio::main]
-async fn main() {
-    let socket = create_udp_socket().expect("Failed to bind UDP socket");
+const DNS_SERVER: &str = "8.8.8.8:53";
 
-    println!("Socket bound to: {:?}", socket.local_addr());
+#[tokio::main]
+async fn main() -> io::Result<()> {
+    let socket = create_udp_socket()?;
+
+    println!("Local socket: {}", socket.local_addr()?);
 
     let domain = "example.com";
 
-    let packet = build_dns_packet().await;
-    parse_domain(domain).await;
+    let labels = parse_domain(domain);
+    let packet = build_dns_packet(&labels).await;
 
-    println!("Built packet: {:?}", packet);
+    println!("Domain labels: {:?}", labels);
+    println!("Packet size: {} bytes", packet.len());
+
+    send_dns_query(&socket, &packet)?;
+
+    Ok(())
 }
 
-fn create_udp_socket() -> std::io::Result<UdpSocket> {
+fn create_udp_socket() -> io::Result<UdpSocket> {
     UdpSocket::bind("0.0.0.0:0")
 }
 
-async fn build_dns_packet() -> Vec<u8> {
-    println!("Building DNS packet...");
-
-    // placeholder for real DNS packet data
-    vec![0u8; 32]
+fn parse_domain(domain: &str) -> Vec<String> {
+    domain
+        .split('.')
+        .map(String::from)
+        .collect()
 }
 
-async fn parse_domain(domain: &str) {
-    println!("Parsing domain: {}", domain);
+async fn build_dns_packet(labels: &[String]) -> Vec<u8> {
+    println!("Building DNS packet...");
+
+    let mut packet = Vec::new();
+
+    // Placeholder DNS header
+    packet.extend_from_slice(&[0u8; 12]);
+
+    // Encode domain labels
+    for label in labels {
+        packet.push(label.len() as u8);
+        packet.extend_from_slice(label.as_bytes());
+    }
+
+    packet.push(0); // End of QNAME
+
+    packet
+}
+
+fn send_dns_query(socket: &UdpSocket, packet: &[u8]) -> io::Result<usize> {
+    println!("Sending query to {}", DNS_SERVER);
+
+    socket.send_to(packet, DNS_SERVER)
 }
